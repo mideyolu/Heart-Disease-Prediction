@@ -19,18 +19,24 @@ model = jb.load('../notebook/KNN_Heart_Disease_predictor.joblib')
 #implementing the diagnosis
 def diagnosis_heart_disease(age, gender, chest_pain, resting_bp, cholesterol, resting_electrocardiographic,
                             max_heart_rate, exercise_angina, oldpeak, slope, ca, thalassemia):
-    gender = encode_map['Gender'][gender]
-    chest_pain = encode_map['Chest Pain'][chest_pain]
-    resting_electrocardiographic = encode_map['Resting_Electrocardiographic'][resting_electrocardiographic]
-    exercise_angina = encode_map['Exercise_Angina'][exercise_angina]
-    slope = encode_map['Slope'][slope]
-    thalassemia = encode_map['Thalassemia'][thalassemia]
+            
+        try:
+            gender = encode_map['Gender'][gender]
+            chest_pain = encode_map['Chest Pain'][chest_pain]
+            resting_electrocardiographic = encode_map['Resting_Electrocardiographic'][resting_electrocardiographic]
+            exercise_angina = encode_map['Exercise_Angina'][exercise_angina]
+            slope = encode_map['Slope'][slope]
+            thalassemia = encode_map['Thalassemia'][thalassemia]
 
-    input_data = np.array([[age, gender, chest_pain, resting_bp, cholesterol, resting_electrocardiographic,
-                            max_heart_rate, exercise_angina, oldpeak, slope, ca, thalassemia]])
-    prediction = model.predict(input_data)
-    probability = round((model.predict_proba(input_data)[0][prediction[0]]) * 100 )
-    return prediction[0], probability
+            input_data = np.array([[age, gender, chest_pain, resting_bp, cholesterol, resting_electrocardiographic,
+                                    max_heart_rate, exercise_angina, oldpeak, slope, ca, thalassemia]])
+            prediction = model.predict(input_data)
+            probability = round((model.predict_proba(input_data)[0][prediction[0]]) * 100 )
+            return prediction[0], probability
+        except KeyError as e:
+           raise KeyError(f"Invalid input: {e}. Please check if you've provided all required inputs.")
+        except ValueError as e:
+             raise ValueError(f"Invalid input value: {e}. Please ensure numerical values are entered correctly.")
 
 
 st.markdown(
@@ -71,10 +77,24 @@ ca = st.slider('Number of Major Vessels Colored by Fluoroscopy', 0, 3, 0)
 thalassemia = st.selectbox('Thalassemia', ['','Reversible Defect', 'Fixed Defect', 'Normal'])
 
 # Make prediction
-if st.button('Predict'):
-    prediction, probability = diagnosis_heart_disease(int(age), gender, chest_pain, int(resting_bp), int(cholesterol), resting_electrocardiographic,
-                                        int(max_heart_rate), exercise_angina, oldpeak, slope, ca, thalassemia)
-    if prediction == 0:
-        st.success(f'The System Predicts: No Heart Disease Detected {probability}%')
-    else:
-        st.error(f'Heart Disease Detected {probability}%')
+if all([age, gender, chest_pain, resting_bp, cholesterol, resting_electrocardiographic,
+        max_heart_rate, exercise_angina, oldpeak, slope, ca, thalassemia]):
+    if st.button('Predict'):
+        try:
+            prediction_result = diagnosis_heart_disease(int(age), gender, chest_pain, int(resting_bp), int(cholesterol),
+                                                        resting_electrocardiographic, int(max_heart_rate), exercise_angina,
+                                                        oldpeak, slope, ca, thalassemia)
+            if prediction_result:
+                prediction, probability = prediction_result
+                if prediction == 0:
+                    st.success(f'The System Predicts: No Heart Disease Detected {probability}%')
+                else:
+                    st.error(f'Heart Disease Detected {probability}%')
+        except KeyError as e:
+            st.error(f"Error: {e}")
+        except ValueError as e:
+            st.error(f"Error: {e}")
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+else:
+    st.warning("Please fill in all input fields before making a prediction.")
